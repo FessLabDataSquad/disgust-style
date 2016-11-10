@@ -18,8 +18,8 @@ study2.items<-read.csv("itemsstudy2.csv",na.strings=c(""), row.names=1, header=F
 names(study2.items) <-  "item"
 
 
-                                      ### study1 cleaning ###
- 
+### study1 cleaning ###
+
 #check variable classes, update as needed
 #sapply(study1, class)
 study1$sex.code<- as.factor (study1$sex.code)
@@ -31,61 +31,71 @@ study1$time<-as.numeric(difftime(mdy_hms(study1$end), mdy_hms(study1$start)))
 
 #time cutoff analysis
 mean(study1$time)
-length(subset(study1$time, study1$time<5))
-length(subset(study1$time, study1$time>45))
+MIN_ACCEPTABLE_TIME = 5
+MAX_ACCEPTABLE_TIME = 45 #Not sure if you want to name it "max acceptable time" since you end up keeping times greater than this
+length(subset(study1$time, study1$time<MIN_ACCEPTABLE_TIME))
+length(subset(study1$time, study1$time>MAX_ACCEPTABLE_TIME)) 
 
 #cut point: keep >5 minutes
-study1<-subset(study1, study1$time>5) #sample now n=988
+study1<-subset(study1, study1$time>MIN_ACCEPTABLE_TIME) #sample now n=988 
 
 #attention check #1 (phone)
-length (subset (study1$check_low, study1$check_low!=1))
-length (subset (study1$check_low, study1$check_low==1))
-length (subset (study1$check_low, study1$check_low>2))
+length (subset (study1$check_low, study1$check_low!=1)) #what is 1?
+length (subset (study1$check_low, study1$check_low==1)) #what is 1?
+length (subset (study1$check_low, study1$check_low>2)) #what is 2?
 
 # keep 1s and 2s (should I keep 2s?)
-study1<- subset (study1, study1$check_low==1 | study1$check_low==2)
+study1<- subset (study1, study1$check_low==1 | study1$check_low==2) 
 
 #attention check #2 (alphabet)
-length (subset (study1$check_alphabet, study1$check_alphabet==26))
-length (subset (study1$check_alphabet, study1$check_alphabet==27))
-length (subset (study1$check_alphabet, study1$check_alphabet>27))
-length (subset (study1$check_alphabet, study1$check_alphabet<26))
+LETTERS_IN_ALPHABET = 26
+EXTRA_LETTER = LETTERS_IN_ALPHABET + 1
+length (subset (study1$check_alphabet, study1$check_alphabet==LETTERS_IN_ALPHABET))
+length (subset (study1$check_alphabet, study1$check_alphabet==EXTRA_LETTER)) 
+length (subset (study1$check_alphabet, study1$check_alphabet>EXTRA_LETTER)) 
+length (subset (study1$check_alphabet, study1$check_alphabet<LETTERS_IN_ALPHABET)) 
 
 #eliminate all but 26 and 27
 #27 was common enough that it seems like a counting mistake, rather than attention failure
-study1<- subset (study1, study1$check_alphabet==26 | study1$check_alphabet==27)
+study1<- subset (study1, study1$check_alphabet==LETTERS_IN_ALPHABET | study1$check_alphabet==EXTRA_LETTER)
 
 #calculate height, ignoring half-inches for now
-study1$height1<-(study1$feet1)*12+(study1$inches1)#+(study1$halfinches1-1)*0.5
-study1$height2<-(study1$feet2)*12+(study1$inches2)#+(study1$halfinches2-1)*0.5
+FEET_TO_INCHES = 12
+study1$height1<-(study1$feet1)*FEET_TO_INCHES+(study1$inches1)#+(study1$halfinches1-1)*0.5   
+study1$height2<-(study1$feet2)*FEET_TO_INCHES+(study1$inches2)#+(study1$halfinches2-1)*0.5  
 study1$height <- pmax (study1$height1, study1$height2, na.rm=TRUE)
 
 #reverse-code such that higher is more harm avoidant
-study1$seatbelt <- 6-study1$seatbelt
-study1$jaywalk <- 6-study1$jaywalk
+SCALE_MAX = 5
+CONVERSION_FACTOR = SCALE_MAX + 1  #Not sure if you want to name it "conversion factor" because this is really vague but I couldn't think of anything else! 
+study1$seatbelt <- CONVERSION_FACTOR-study1$seatbelt  
+study1$jaywalk <- CONVERSION_FACTOR-study1$jaywalk
 
 
-                           ### study 2 cleaning ###
- 
+### study 2 cleaning ###
+
 #calculate height
-study2$height<-(study2$feet.code+2)*12+(study2$inches.code-1)   
+SCALE_TO_FEET = 2
+SCALE_TO_INCHES = 1
+study2$height<-(study2$feet.code+SCALE_TO_FEET)*FEET_TO_INCHES+(study2$inches.code-SCALE_TO_INCHES) 
 
 #recode the only participant to choose "other"
 #sex labels 1=M, 2=F, 3=other
-study2$sex.code[81]<-NA 
+PARTICIPANT_NUMBER = 81
+study2$sex.code[PARTICIPANT_NUMBER]<-NA 
 study2$sex.code<- as.factor (study2$sex.code)
 
 #reverse code scale items
-study2$ha5 <- 6-study2$ha5
-study2$ha9 <- 6-study2$ha9
-study2$ha11 <- 6-study2$ha11
-study2$ha11a <- 6-study2$ha11a
+study2$ha5 <- CONVERSION_FACTOR-study2$ha5
+study2$ha9 <- CONVERSION_FACTOR-study2$ha9
+study2$ha11 <- CONVERSION_FACTOR-study2$ha11
+study2$ha11a <- CONVERSION_FACTOR-study2$ha11a
 
 #create variable for completion time
 study2$time<-as.numeric(difftime(mdy_hm(study2$end), mdy_hm(study2$start))) 
 
-#removes 25 participants who finished in less than 5 minutes
-study2<-subset(study2, study2$time>4) 
+#removes 25 participants who finished in less than 5 minutes 
+study2<-subset(study2, study2$time>=MIN_ACCEPTABLE_TIME)  #not sure if this is right?
 
 #honestresponse -- there are no 3s, so don't filter out anyone
 #parent labels 1=yes, 2=no
@@ -94,7 +104,7 @@ study2<-subset(study2, study2$time>4)
 
 
 
-                                 ### Scales ###
+### Scales ###
 
 library(psych)
 
@@ -128,7 +138,7 @@ key.all1<-make.keys(study1,list(
   d.healthsafety= DOSPERT.healthsafety,
   d.ethical     = DOSPERT.ethical, 
   DOSPERT       = DOSPERT.all,
-#  d.harmavoid   = DOSPERT.harmavoid,
+  #  d.harmavoid   = DOSPERT.harmavoid,
   harm.avoid1    = harm.avoidance1))
 
 scores1 <- scoreItems(key.all1[allscaleitems1,], study1[,allscaleitems1], missing=TRUE, impute="none")
@@ -159,15 +169,15 @@ key.all2<-make.keys(study2,list(
   TDDS.pathogen=TDDS.pathogen,
   TDDS.all= TDDS.all,
   Curtis = Curtis.relevant,
-#  Curtis.limited=Curtis.relevant.limited,
-#  c.irrelevant = Curtis.irrelevant,
+  #  Curtis.limited=Curtis.relevant.limited,
+  #  c.irrelevant = Curtis.irrelevant,
   d.social      = DOSPERT.social, 
   d.recreational= DOSPERT.recreational,
   d.financial   = DOSPERT.financial,
   d.healthsafety= DOSPERT.healthsafety,
   d.ethical     = DOSPERT.ethical, 
   DOSPERT       = DOSPERT.all,
-#  d.harmavoid   = DOSPERT.harmavoid,
+  #  d.harmavoid   = DOSPERT.harmavoid,
   harm.avoid2    = harm.avoidance2))
 
 scores2 <- scoreItems(key.all2[allscaleitems2,], study2[,allscaleitems2], missing=TRUE, impute="none")
@@ -183,7 +193,7 @@ rm(a)
 write.csv (study2, "finaldata_study2.csv")
 
 
-                                      ## SCALE VALIDATION ##
+## SCALE VALIDATION ##
 
 #Study 2
 #Curtis Disgust item paired comparisons
@@ -204,7 +214,8 @@ Curtis.paired.comparisons <-t(sapply(tests.curtis.items, function(x) {
     x$parameter)
 }))
 
-print(Curtis.paired.comparisons, digits=3)
+HIGH_PRECISION = 3
+print(Curtis.paired.comparisons, digits=HIGH_PRECISION)
 ########################
 #####   TABLE   ########
 ########################
@@ -225,12 +236,12 @@ t.test(study2$ha1 ~ study2$ha1a, na.action=na.omit)
 # Table 2 in ms
 alphatable <- merge( t(scores1$alpha), t(scores2$alpha), by="row.names"   , all=TRUE  )
 colnames(alphatable)<- c("(Sub)scale", "Study 1", "Study 2")
-print(alphatable, digits=3, row.names = FALSE, right=F)
+print(alphatable, digits=HIGH_PRECISION, row.names = FALSE, right=F)  #how many sig figs
 write.table(alphatable, row.names=FALSE, file="AlphaTable.csv", sep=",") 
 
 
 
-                    ### Analysis of Hypotheses ###
+### Analysis of Hypotheses ###
 
 ###########################################################################################
 #Females, compared to males, will show more disgust and harm avoidance and less risk taking
@@ -238,25 +249,26 @@ write.table(alphatable, row.names=FALSE, file="AlphaTable.csv", sep=",")
 
 # DISGUST + HARM AVOIDANCE SEX DIFF
 # study 1 
-  #raw effect and p values based on Welsh's t
+#raw effect and p values based on Welsh's t
 measure.disgustharm1 <- list ("TDDS.all", "TDDS.sexual", "TDDS.moral", "TDDS.pathogen", "harm.avoid1")
 tests.sex.disgustharm1 <-  lapply (measure.disgustharm1, function (x) 
-  {t.test (study1[,x] ~ study1$sex.code, alternative="less", na.action = na.omit)}) 
+{t.test (study1[,x] ~ study1$sex.code, alternative="less", na.action = na.omit)}) 
 
 sex.differences.disgustharm1 <- as.data.frame(
   t(sapply(tests.sex.disgustharm1, function(x) {
-        c( x$estimate[2]-x$estimate[1],
-           x$p.value,
-           x$parameter)
+    c( x$estimate[2]-x$estimate[1],
+       x$p.value,
+       x$parameter)
   })))
 colnames(sex.differences.disgustharm1)<- c("raw effect", "p.value","df")
 row.names(sex.differences.disgustharm1) <- measure.disgustharm1
-print(sex.differences.disgustharm1, digits=3 )
+print(sex.differences.disgustharm1, digits=HIGH_PRECISION )
 
- # calculate d
+# calculate d
 library(effsize)
 d.sex.disgustharm1 <-  lapply (measure.disgustharm1, function (x) 
-  {cohen.d (study1[,x] ~ study1$sex.code, na.rm=T,conf.level=0.95)}) 
+  HIGH_CONFIDENCE = 0.95
+  {cohen.d (study1[,x] ~ study1$sex.code, na.rm=T,conf.level=HIGH_CONFIDENCE)})
 
 d.sex.differences.disgustharm1 <- as.data.frame(
   t(sapply(d.sex.disgustharm1, function(x) {
@@ -267,31 +279,31 @@ d.sex.differences.disgustharm1 <- as.data.frame(
 
 colnames(d.sex.differences.disgustharm1)<- c("d", "-95%CI" , "+95%CI")
 row.names(d.sex.differences.disgustharm1) <- measure.disgustharm1
-print(d.sex.differences.disgustharm1, digits=3 )
+print(d.sex.differences.disgustharm1, digits=HIGH_PRECISION)
 
-    #summarize study 1 disgust & harm avoid
+#summarize study 1 disgust & harm avoid
 sex.disgustharm1 <- merge(d.sex.differences.disgustharm1,  sex.differences.disgustharm1, by="row.names", all=TRUE  )
-print(sex.disgustharm1, digits=3)
+print(sex.disgustharm1, digits=HIGH_PRECISION)
 
 
-  # study 2 disgust & harm avoidance raw effect and p values based on Welsh's t
+# study 2 disgust & harm avoidance raw effect and p values based on Welsh's t
 measures.disgustharm2 <- list ("TDDS.all", "TDDS.sexual", "TDDS.moral", "TDDS.pathogen", "Curtis", "harm.avoid2")
 t.tests.sex.disgustharm2 <-  lapply (measures.disgustharm2, function (x) 
-  {t.test (study2[,x] ~ study2$sex.code, alternative="less", na.action = na.omit)}) 
+{t.test (study2[,x] ~ study2$sex.code, alternative="less", na.action = na.omit)}) 
 
 t.sex.differences.disgustharm2 <- as.data.frame(
   t(sapply(t.tests.sex.disgustharm2, function(x) {c(
-        x$estimate[2]-x$estimate[1],
-        x$p.value,
-        x$parameter)
+    x$estimate[2]-x$estimate[1],
+    x$p.value,
+    x$parameter)
   })))
 colnames(t.sex.differences.disgustharm2)<- c("raw effect" ,"p.value","df")
 row.names(t.sex.differences.disgustharm2) <- measures.disgustharm2
-print(t.sex.differences.disgustharm2, digits=3 )
+print(t.sex.differences.disgustharm2, digits=HIGH_PRECISION)
 
-  #  calculate d
+#  calculate d
 d.sex.disgustharm2 <-  lapply (measures.disgustharm2, function (x) 
-{cohen.d (study2[,x], study2$sex.code,  na.rm=T,conf.level=0.95)})
+{cohen.d (study2[,x], study2$sex.code,  na.rm=T,conf.level=HIGH_CONFIDENCE)})
 
 d.sex.differences.disgustharm2 <- as.data.frame(
   t(sapply(d.sex.disgustharm2, function(x) {
@@ -302,30 +314,30 @@ d.sex.differences.disgustharm2 <- as.data.frame(
 
 colnames(d.sex.differences.disgustharm2)<- c("d", "-95%CI" , "+95%CI")
 row.names(d.sex.differences.disgustharm2) <- measures.disgustharm2
-print(d.sex.differences.disgustharm2, digits=3 )
+print(d.sex.differences.disgustharm2, digits=HIGH_PRECISION)
 
-  #summarize study 2 disgust
+#summarize study 2 disgust
 sex.disgustharm2 <- merge(d.sex.differences.disgustharm2, t.sex.differences.disgustharm2,  by="row.names", all=TRUE  )
-print(sex.disgustharm2, digits=3)
+print(sex.disgustharm2, digits=HIGH_PRECISION)
 
 ########################
 #| | | TABLE  | | | | |#
 ########################
 DisgustSexDifferences <- merge(x=sex.disgustharm1 , y=sex.disgustharm2,
                                by="Row.names",all=T, suffixes=c(".study1", ".study2"))
-print(DisgustSexDifferences, digits=3 )
+print(DisgustSexDifferences, digits=HIGH_PRECISION)
 #write.table(DisgustSexDifferences, file="DisgustSex.csv", sep=",", row.names=F) 
 
 #simpler table for MS Table 3
 SexDiffs.DigustHarm.MS<-merge(d.sex.differences.disgustharm1,  d.sex.differences.disgustharm2, by="row.names", all=TRUE, suffixes=c(".study1", ".study2")  )
-print(SexDiffs.DigustHarm.MS, digits=3)
+print(SexDiffs.DigustHarm.MS, digits=HIGH_PRECISION)
 write.table(SexDiffs.DigustHarm.MS, file="DisgustHarmSex.csv", sep=",", row.names=F)
 
 
 # RISK TAKING SEX DIFF
 
 #study 1 risk taking
-  # raw effect and p
+# raw effect and p
 measures.risk1 <-list("DOSPERT","d.social","d.recreational","d.financial","d.healthsafety","d.ethical","wager")
 tests.sex.risk1 <-  lapply (measures.risk1, function (x) {t.test (study1[,x] ~ study1$sex.code, alternative="greater", na.action = na.omit)}) 
 sex.differences.risk1 <- as.data.frame(
@@ -336,11 +348,11 @@ sex.differences.risk1 <- as.data.frame(
   })))
 colnames(sex.differences.risk1)<- c("raw.effect", "p.value","df")
 row.names(sex.differences.risk1) <- measures.risk1
-print(as.data.frame(sex.differences.risk1), digits=3)
+print(as.data.frame(sex.differences.risk1), digits=HIGH_PRECISION)
 
-  # d and 95% CIs
+# d and 95% CIs
 d.sex.risk1 <-  lapply (measures.risk1, function (x) 
-{cohen.d (study1[,x] ~ study1$sex.code, na.rm=T,conf.level=0.95)}) 
+{cohen.d (study1[,x] ~ study1$sex.code, na.rm=T,conf.level=HIGH_CONFIDENCE)}) 
 
 d.sex.differences.risk1 <- as.data.frame(
   t(sapply(d.sex.risk1, function(x) {
@@ -351,15 +363,15 @@ d.sex.differences.risk1 <- as.data.frame(
 
 colnames(d.sex.differences.risk1)<- c("d", "-95%CI" , "+95%CI")
 row.names(d.sex.differences.risk1) <- measures.risk1
-print(d.sex.differences.risk1, digits=3 )
+print(d.sex.differences.risk1, digits=HIGH_PRECISION)
 
 #summarize study 1 risk
 sex.risk1 <- merge(d.sex.differences.risk1,  sex.differences.risk1, by="row.names", all=TRUE  )
-print(sex.risk1, digits=3)
+print(sex.risk1, digits=HIGH_PRECISION)
 
 
 #study 2 risk taking
-  # raw effect and p
+# raw effect and p
 measures.risk2 <- list ("DOSPERT","d.social","d.recreational","d.financial","d.healthsafety","d.ethical")
 tests.sex.risk2 <-  lapply (measures.risk2, function (x) {t.test (study2[,x] ~ study2$sex.code, alternative="greater", na.action = na.omit)}) 
 sex.differences.risk2 <- as.data.frame(
@@ -370,11 +382,11 @@ sex.differences.risk2 <- as.data.frame(
   })))
 colnames(sex.differences.risk2)<- c("raw.effect", "p.value", "df")
 row.names(sex.differences.risk2) <- measures.risk2
-print(as.data.frame(sex.differences.risk2), digits=3)
+print(as.data.frame(sex.differences.risk2), digits=HIGH_PRECISION)
 
 # d and 95% CIs
 d.sex.risk2 <-  lapply (measures.risk2, function (x) 
-{cohen.d (study2[,x] ~ study2$sex.code, na.rm=T,conf.level=0.95)}) 
+{cohen.d (study2[,x] ~ study2$sex.code, na.rm=T,conf.level=HIGH_CONFIDENCE)}) 
 
 d.sex.differences.risk2 <- as.data.frame(
   t(sapply(d.sex.risk2, function(x) {
@@ -385,27 +397,27 @@ d.sex.differences.risk2 <- as.data.frame(
 
 colnames(d.sex.differences.risk2)<- c("d", "-95%CI" , "+95%CI")
 row.names(d.sex.differences.risk2) <- measures.risk2
-print(d.sex.differences.risk2, digits=3 )
+print(d.sex.differences.risk2, digits=HIGH_PRECISION)
 
 #summarize study 2 risk
 sex.risk2 <- merge(d.sex.differences.risk2,  sex.differences.risk2, by="row.names", all=TRUE  )
-print(sex.risk2, digits=3)
+print(sex.risk2, digits=HIGH_PRECISION)
 
 ########################
 #####   TABLE   ########
 ########################
 RiskSexDifferences <- merge(sex.risk1 , sex.risk2,
-                               by="Row.names",all=T, suffixes=c(".study1", ".study2"))
+                            by="Row.names",all=T, suffixes=c(".study1", ".study2"))
 
 row.order <- c(5,4,3,1,2,6,7)
 
-print(RiskSexDifferences[order(row.order),], digits=3 )
+print(RiskSexDifferences[order(row.order),], digits=HIGH_PRECISION)
 #write.table(RiskSexDifferences[order(row.order),], file="RiskSex.csv", sep=",", row.names=F) 
 
 
 # simpler table for MS -- Table 3
 RiskSexDiff.MS <- merge(d.sex.differences.risk1,  d.sex.differences.risk2, by="row.names", all=TRUE, suffixes=c(".study1", ".study2")  )
-print(RiskSexDiff.MS, digits=3 )
+print(RiskSexDiff.MS, digits=HIGH_PRECISION)
 write.table(RiskSexDiff.MS, file="RiskSex.csv", sep=",", row.names=F) 
 
 # manually combine those last 2 tables for manuscript
@@ -418,8 +430,8 @@ write.table(RiskSexDiff.MS, file="RiskSex.csv", sep=",", row.names=F)
 #report in supplement
 #study 1 harm avoidance raw effect & p
 tests.sex.ha1 <-  lapply (harm.avoidance1, function (x) {t.test (study1[,x] ~ study1$sex.code, 
-                                                               alternative="less", 
-                                                               na.action = na.omit)}) 
+                                                                 alternative="less", 
+                                                                 na.action = na.omit)}) 
 sex.differences.ha1 <- as.data.frame(
   t(sapply(tests.sex.ha1, function(x) {
     c(x$estimate[2] - x$estimate[1],
@@ -428,11 +440,11 @@ sex.differences.ha1 <- as.data.frame(
   })))
 colnames(sex.differences.ha1)<- c("raw effect", "p.value", "df")
 row.names(sex.differences.ha1) <- harm.avoidance1
-print (sex.differences.ha1, digits=3, row.names = TRUE, right=F)
+print (sex.differences.ha1, digits=HIGH_PRECISION, row.names = TRUE, right=F)
 
 #study 1 d, 95% CI
 d.sex.ha1 <-  lapply (harm.avoidance1, function (x) 
-{cohen.d (study1[,x] ~ study1$sex.code, na.rm=T,conf.level=0.95)}) 
+{cohen.d (study1[,x] ~ study1$sex.code, na.rm=T,conf.level=HIGH_CONFIDENCE)}) 
 
 d.sex.differences.ha1 <- as.data.frame(
   t(sapply(d.sex.ha1, function(x) {
@@ -443,11 +455,11 @@ d.sex.differences.ha1 <- as.data.frame(
 
 colnames(d.sex.differences.ha1)<- c("d", "-95%CI" , "+95%CI")
 row.names(d.sex.differences.ha1) <- harm.avoidance1
-print(d.sex.differences.ha1, digits=3 )
+print(d.sex.differences.ha1, digits=HIGH_PRECISION)
 
 #summarize study 1 harm avoidance
 sex.ha1 <- merge(d.sex.differences.ha1,  sex.differences.ha1, by="row.names", all=TRUE  )
-print(sex.ha1, digits=3)
+print(sex.ha1, digits=HIGH_PRECISION)
 ########################
 #####   TABLE   ########
 ########################
@@ -463,11 +475,11 @@ sex.differences.ha2 <- as.data.frame(
   })))
 colnames(sex.differences.ha2)<- c("raw effect", "p.value", "df")
 row.names(sex.differences.ha2) <- harm.avoidance2
-print (sex.differences.ha2, digits=3, row.names = T, right=F)
+print (sex.differences.ha2, digits=HIGH_PRECISION, row.names = T, right=F)
 
 #study 2 d, 95% CI
 d.sex.ha2 <-  lapply (harm.avoidance2, function (x) 
-{cohen.d (study2[,x] ~ study2$sex.code, na.rm=T,conf.level=0.95)}) 
+{cohen.d (study2[,x] ~ study2$sex.code, na.rm=T,conf.level=HIGH_CONFIDENCE)}) 
 
 d.sex.differences.ha2 <- as.data.frame(
   t(sapply(d.sex.ha2, function(x) {
@@ -478,12 +490,12 @@ d.sex.differences.ha2 <- as.data.frame(
 
 colnames(d.sex.differences.ha2)<- c("d", "-95%CI" , "+95%CI")
 row.names(d.sex.differences.ha2) <- harm.avoidance2
-print(d.sex.differences.ha2, digits=3 )
+print(d.sex.differences.ha2, digits=HIGH_PRECISION)
 
 #summarize study 2 harm avoidance
 sex.ha2 <- merge(d.sex.differences.ha2,  sex.differences.ha2, by="row.names" , all=TRUE  )
 sex.ha2<-merge(study2.items, sex.ha2, by.x="row.names", by.y="Row.names")
-print(sex.ha2, digits=3)
+print(sex.ha2, digits=HIGH_PRECISION)
 ########################
 #####   TABLE   ########
 ########################
@@ -492,7 +504,7 @@ write.table(sex.ha2, file="HarmSex2.csv", sep=",", row.names=F)
 # men more flu shots??
 library(Rmisc)
 summarySE(data = study2, measurevar= "ha7", groupvars = "sex.code",
-          na.rm = TRUE, conf.interval = 0.95)
+          na.rm = TRUE, conf.interval = HIGH_CONFIDENCE)
 #yes, men more flu shots. pain of needle?
 
 
@@ -519,17 +531,17 @@ RDH <- study1
 
 #key
 temp.key <- make.keys (RDH, list(
-#  Curtis = Curtis.relevant, 
+  #  Curtis = Curtis.relevant, 
   TDDS = TDDS.all
-#  ,t.sex=     TDDS.sexual 
-#  ,t.moral=   TDDS.moral 
-#  ,t.pathogen=TDDS.pathogen
+  #  ,t.sex=     TDDS.sexual 
+  #  ,t.moral=   TDDS.moral 
+  #  ,t.pathogen=TDDS.pathogen
   ,DOSPERT = DOSPERT.all
-#  ,d.social      = DOSPERT.social 
-#  ,d.recreational= DOSPERT.recreational
-#  ,d.financial   = DOSPERT.financial
-#  ,d.healthsafety= DOSPERT.healthsafety
-#  ,d.ethical     = DOSPERT.ethical
+  #  ,d.social      = DOSPERT.social 
+  #  ,d.recreational= DOSPERT.recreational
+  #  ,d.financial   = DOSPERT.financial
+  #  ,d.healthsafety= DOSPERT.healthsafety
+  #  ,d.ethical     = DOSPERT.ethical
   ,harm.avoid1    = harm.avoidance1
 ))
 
@@ -545,7 +557,8 @@ temp.items <- c(
 temp.scores <- scoreItems (temp.key[temp.items,], RDH [,temp.items], missing=T, impute="none")
 print(temp.scores$corrected, digits=2) #shows calculated rs
 
-temp.effects <- cor.ci(RDH[,temp.items], keys=temp.key[temp.items,], n.iter = 300, plot=FALSE) #saves bootstrapped effect & ci
+ITERATIONS = 300 #Another un-creative name that you can change if you want 
+temp.effects <- cor.ci(RDH[,temp.items], keys=temp.key[temp.items,], n.iter = ITERATIONS, plot=FALSE) #saves bootstrapped effect & ci   #300 = number of iterations 
 
 Study1.RDH.Overview <- temp.effects
 #Study1.RDH.Details <- temp.effects
@@ -563,33 +576,33 @@ RDH <- study1
 
 #key
 temp.key <- make.keys (RDH, list(
-#  Curtis = Curtis.relevant, 
+  #  Curtis = Curtis.relevant, 
   TDDS = TDDS.all
-    ,t.sex=     TDDS.sexual 
-    ,t.moral=   TDDS.moral 
-    ,t.pathogen=TDDS.pathogen
+  ,t.sex=     TDDS.sexual 
+  ,t.moral=   TDDS.moral 
+  ,t.pathogen=TDDS.pathogen
   ,DOSPERT = DOSPERT.all
-    ,d.social      = DOSPERT.social 
-    ,d.recreational= DOSPERT.recreational
-    ,d.financial   = DOSPERT.financial
-    ,d.healthsafety= DOSPERT.healthsafety
-    ,d.ethical     = DOSPERT.ethical
-    ,harm.avoid1    = harm.avoidance1
- ))
+  ,d.social      = DOSPERT.social 
+  ,d.recreational= DOSPERT.recreational
+  ,d.financial   = DOSPERT.financial
+  ,d.healthsafety= DOSPERT.healthsafety
+  ,d.ethical     = DOSPERT.ethical
+  ,harm.avoid1    = harm.avoidance1
+))
 
 #item list
 temp.items <- c(
   TDDS.all
   ,DOSPERT.all
-#  ,Curtis.relevant
+  #  ,Curtis.relevant
   ,harm.avoidance1
-  )
+)
 
 #calculate and display/save scores
 temp.scores <- scoreItems (temp.key[temp.items,], RDH [,temp.items], missing=T, impute="none")
 print(temp.scores$corrected, digits=2) #shows calculated rs
 
-temp.effects <- cor.ci(RDH[,temp.items], keys=temp.key[temp.items,], n.iter = 300, plot=FALSE) #saves bootstrapped effect & ci
+temp.effects <- cor.ci(RDH[,temp.items], keys=temp.key[temp.items,], n.iter = ITERATIONS, plot=FALSE) #saves bootstrapped effect & ci
 
 #Study1.RDH.Overview <- temp.effects
 Study1.RDH.Details <- temp.effects
@@ -602,13 +615,14 @@ temp.effects
 # Males #
 
 #define RDH data set
-RDH <- subset(study1, study1$sex.code==1)
+RDH <- subset(study1, study1$sex.code==1) #what is 1?
 
 #calculate and display/save scores
+LOW_PRECISION = 2
 temp.scores <- scoreItems (temp.key[temp.items,], RDH [,temp.items], missing=T, impute="none")
-print(temp.scores$corrected, digits=2) #shows calculated rs
+print(temp.scores$corrected, digits=LOW_PRECISION) #shows calculated rs 
 
-temp.effects <- cor.ci(RDH[,temp.items], keys=temp.key[temp.items,], n.iter = 300, plot=FALSE) #saves bootstrapped effect & ci
+temp.effects <- cor.ci(RDH[,temp.items], keys=temp.key[temp.items,], n.iter = ITERATIONS, plot=FALSE) #saves bootstrapped effect & ci
 
 #Study1.RDH.Overview <- temp.effects
 Study1.RDH.Details.m <- temp.effects
@@ -619,13 +633,13 @@ temp.effects
 # Females #
 
 #define RDH data set
-RDH <- subset(study1, study1$sex.code==2)
+RDH <- subset(study1, study1$sex.code==2) #women 
 
 #calculate and display/save scores
 temp.scores <- scoreItems (temp.key[temp.items,], RDH [,temp.items], missing=T, impute="none")
-print(temp.scores$corrected, digits=2) #shows calculated rs
+print(temp.scores$corrected, digits=LOW_PRECISION) #shows calculated rs   #digits = sig figs / decimal places
 
-temp.effects <- cor.ci(RDH[,temp.items], keys=temp.key[temp.items,], n.iter = 300, plot=FALSE) #saves bootstrapped effect & ci
+temp.effects <- cor.ci(RDH[,temp.items], keys=temp.key[temp.items,], n.iter = ITERATIONS, plot=FALSE) #saves bootstrapped effect & ci
 
 #Study1.RDH.Overview <- temp.effects
 Study1.RDH.Details.f <- temp.effects
@@ -655,7 +669,7 @@ temp.key <- make.keys (RDH, list(
   #  ,d.financial   = DOSPERT.financial
   #  ,d.healthsafety= DOSPERT.healthsafety
   #  ,d.ethical     = DOSPERT.ethical
-     ,harm.avoid2    = harm.avoidance2
+  ,harm.avoid2    = harm.avoidance2
 ))
 
 #item list
@@ -668,9 +682,9 @@ temp.items <- c(
 
 #calculate and display/save scores
 temp.scores <- scoreItems (temp.key[temp.items,], RDH [,temp.items], missing=T, impute="none")
-print(temp.scores$corrected, digits=2) #shows calculated rs
+print(temp.scores$corrected, digits=LOW_PRECISION) #shows calculated rs
 
-temp.effects <- cor.ci(RDH[,temp.items], keys=temp.key[temp.items,], n.iter = 300, plot=FALSE) #saves bootstrapped effect & ci
+temp.effects <- cor.ci(RDH[,temp.items], keys=temp.key[temp.items,], n.iter = ITERATIONS, plot=FALSE) #saves bootstrapped effect & ci
 
 #Study1.RDH.Overview <- temp.effects
 #Study1.RDH.Details <- temp.effects
@@ -712,9 +726,9 @@ temp.items <- c(
 
 #calculate and display/save scores
 temp.scores <- scoreItems (temp.key[temp.items,], RDH [,temp.items], missing=T, impute="none")
-print(temp.scores$corrected, digits=2) #shows calculated rs
+print(temp.scores$corrected, digits=LOW_PRECISION) #shows calculated rs
 
-temp.effects <- cor.ci(RDH[,temp.items], keys=temp.key[temp.items,], n.iter = 300, plot=FALSE) #saves bootstrapped effect & ci
+temp.effects <- cor.ci(RDH[,temp.items], keys=temp.key[temp.items,], n.iter = ITERATIONS, plot=FALSE) #saves bootstrapped effect & ci
 
 #Study1.RDH.Overview <- temp.effects
 #Study1.RDH.Details <- temp.effects
@@ -730,9 +744,9 @@ RDH <- subset( study2, study2$sex.code==1)
 
 #calculate and display/save scores
 temp.scores <- scoreItems (temp.key[temp.items,], RDH [,temp.items], missing=T, impute="none")
-print(temp.scores$corrected, digits=2) #shows calculated rs
+print(temp.scores$corrected, digits=LOW_PRECISION) #shows calculated rs
 
-temp.effects <- cor.ci(RDH[,temp.items], keys=temp.key[temp.items,], n.iter = 300, plot=FALSE) #saves bootstrapped effect & ci
+temp.effects <- cor.ci(RDH[,temp.items], keys=temp.key[temp.items,], n.iter = ITERATIONS, plot=FALSE) #saves bootstrapped effect & ci
 
 #Study1.RDH.Overview <- temp.effects
 #Study1.RDH.Details <- temp.effects
@@ -747,9 +761,9 @@ RDH <- subset( study2, study2$sex.code==2)
 
 #calculate and display/save scores
 temp.scores <- scoreItems (temp.key[temp.items,], RDH [,temp.items], missing=T, impute="none")
-print(temp.scores$corrected, digits=2) #shows calculated rs
+print(temp.scores$corrected, digits=LOW_PRECISION) #shows calculated rs
 
-temp.effects <- cor.ci(RDH[,temp.items], keys=temp.key[temp.items,], n.iter = 300, plot=FALSE) #saves bootstrapped effect & ci
+temp.effects <- cor.ci(RDH[,temp.items], keys=temp.key[temp.items,], n.iter = ITERATIONS, plot=FALSE) #saves bootstrapped effect & ci
 
 #Study1.RDH.Overview <- temp.effects
 #Study1.RDH.Details <- temp.effects
@@ -791,7 +805,7 @@ library(reshape2)
 # ALL DISGUST MEASURES
 #study 1 risk-disgust
 plot.study1<- melt(study1[,c("DOSPERT","TDDS.all","TDDS.sexual","TDDS.moral","TDDS.pathogen")], id="DOSPERT")
-ggplot(plot.study1, aes(x=DOSPERT, y=value, col=variable)) + geom_point(shape=1) + geom_smooth(method=lm)  +ylab("Disgust")
+ggplot(plot.study1, aes(x=DOSPERT, y=value, col=variable)) + geom_point(shape=1) + geom_smooth(method=lm)  +ylab("Disgust") #what is 1
 #study 2 risk-disgust
 plot.study2<- melt(study2[,c("DOSPERT","TDDS.all","TDDS.sexual","TDDS.moral","TDDS.pathogen", "Curtis")], id="DOSPERT")
 ggplot(plot.study2, aes(x=DOSPERT, y=value, col=variable)) + geom_point(shape=1) + geom_smooth(method=lm)  +ylab("Disgust")
@@ -837,7 +851,7 @@ harm.DOSPERT.table <- as.data.frame(
 colnames(harm.DOSPERT.table)<- c("df", "DOSPERT r", "DOSPERT p")
 row.names(harm.DOSPERT.table) <- harm.avoidance1
 #harm.DOSPERT.table<-merge(harm.DOSPERT.table, items, by="row.names")
-print(harm.DOSPERT.table, digits=3, row.names = T, right=F)
+print(harm.DOSPERT.table, digits=HIGH_PRECISION, row.names = T, right=F)
 
 #add TDDSs#
 #TDDS Pathogen
@@ -849,7 +863,7 @@ harm.t.pathogen.table <- as.data.frame(
   })))
 colnames(harm.t.pathogen.table)<- c("T path r", "T path p")
 row.names(harm.t.pathogen.table) <- harm.avoidance1
-print (harm.t.pathogen.table, digits=3, row.names = T, right=F)
+print (harm.t.pathogen.table, digits=HIGH_PRECISION, row.names = T, right=F)
 
 Harm.Risk.Disgust.Table <- merge(harm.DOSPERT.table, harm.t.pathogen.table, by="row.names")
 #harm.t.pathogen.table<-merge(harm.t.pathogen.table, items, by="row.names")
@@ -865,7 +879,7 @@ colnames(harm.t.sex.table)<- c("T sex r", "T sex p")
 row.names(harm.t.sex.table) <- harm.avoidance1
 #harm.t.sex.table<-merge(harm.t.sex.table, items, by="row.names")
 #harm.t.sex.table <- harm.t.sex.table[c(4,2,3)]
-print (harm.t.sex.table, digits=3, row.names = T, right=F)
+print (harm.t.sex.table, digits=HIGH_PRECISION, row.names = T, right=F)
 
 Harm.Risk.Disgust.Table <- merge(Harm.Risk.Disgust.Table, harm.t.sex.table, by.x="Row.names", by.y="row.names")
 
@@ -880,13 +894,13 @@ colnames(harm.t.moral.table)<- c("T moral r", "T moral p")
 row.names(harm.t.moral.table) <- harm.avoidance1
 #harm.t.moral.table<-merge(harm.t.moral.table, items, by="row.names")
 #harm.t.moral.table <- harm.t.moral.table[c(4,2,3)]
-print (harm.t.moral.table, digits=3, row.names = T, right=F)
+print (harm.t.moral.table, digits=HIGH_PRECISION, row.names = T, right=F)
 
 Harm.Risk.Disgust.Table <- merge(Harm.Risk.Disgust.Table, harm.t.moral.table, by.x="Row.names", by.y="row.names")
 
-print(Harm.Risk.Disgust.Table, digits=2, row.names = F, left=T)
+print(Harm.Risk.Disgust.Table, digits=LOW_PRECISION, row.names = F, left=T)
 
-write.csv (print(Harm.Risk.Disgust.Table, digits=2, row.names = F, left=T), "HarmRiskDisgust1.csv")
+write.csv (print(Harm.Risk.Disgust.Table, digits=LOW_PRECISION, row.names = F, left=T), "HarmRiskDisgust1.csv")
 
 
 #study2
@@ -903,7 +917,7 @@ harm.DOSPERT.table <- as.data.frame(
 colnames(harm.DOSPERT.table)<- c("df", "DOSPERT r", "DOSPERT p")
 row.names(harm.DOSPERT.table) <- harm.avoidance2
 harm.DOSPERT.table<-merge(harm.DOSPERT.table, study2.items, by="row.names")
-print(harm.DOSPERT.table, digits=3, row.names = T, right=F)
+print(harm.DOSPERT.table, digits=HIGH_PRECISION, row.names = T, right=F)
 
 #add TDDSs#
 #TDDS Pathogen
@@ -915,7 +929,7 @@ harm.t.pathogen.table <- as.data.frame(
   })))
 colnames(harm.t.pathogen.table)<- c("T path r", "T path p")
 row.names(harm.t.pathogen.table) <- harm.avoidance2
-print (harm.t.pathogen.table, digits=3, row.names = T, right=F)
+print (harm.t.pathogen.table, digits=HIGH_PRECISION, row.names = T, right=F)
 
 Harm.Risk.Disgust.Table <- merge(harm.DOSPERT.table, harm.t.pathogen.table, by.x="Row.names", by.y="row.names")
 #harm.t.pathogen.table<-merge(harm.t.pathogen.table, items, by="row.names")
@@ -931,7 +945,7 @@ colnames(harm.t.sex.table)<- c("T sex r", "T sex p")
 row.names(harm.t.sex.table) <- harm.avoidance2
 #harm.t.sex.table<-merge(harm.t.sex.table, items, by="row.names")
 #harm.t.sex.table <- harm.t.sex.table[c(4,2,3)]
-print (harm.t.sex.table, digits=3, row.names = T, right=F)
+print (harm.t.sex.table, digits=HIGH_PRECISION, row.names = T, right=F)
 
 Harm.Risk.Disgust.Table <- merge(Harm.Risk.Disgust.Table, harm.t.sex.table, by.x="Row.names", by.y="row.names")
 
@@ -946,11 +960,11 @@ colnames(harm.t.moral.table)<- c("T moral r", "T moral p")
 row.names(harm.t.moral.table) <- harm.avoidance2
 #harm.t.moral.table<-merge(harm.t.moral.table, items, by="row.names")
 #harm.t.moral.table <- harm.t.moral.table[c(4,2,3)]
-print (harm.t.moral.table, digits=3, row.names = T, right=F)
+print (harm.t.moral.table, digits=HIGH_PRECISION, row.names = T, right=F)
 
 Harm.Risk.Disgust.Table <- merge(Harm.Risk.Disgust.Table, harm.t.moral.table, by.x="Row.names", by.y="row.names")
 
-print(Harm.Risk.Disgust.Table, digits=2, row.names = F, left=T)
+print(Harm.Risk.Disgust.Table, digits=LOW_PRECISION, row.names = F, left=T)
 
 #add Curtis
 
@@ -963,13 +977,13 @@ harm.curtis.table <- as.data.frame(
   })))
 colnames(harm.curtis.table)<- c("Curtis r", "Curtis p")
 row.names(harm.curtis.table) <- harm.avoidance2
-print (harm.curtis.table, digits=3, row.names = T, right=F)
+print (harm.curtis.table, digits=HIGH_PRECISION, row.names = T, right=F)
 
 Harm.Risk.Disgust.Table <- merge(Harm.Risk.Disgust.Table, harm.curtis.table, by.x="Row.names", by.y="row.names")
 
-print(Harm.Risk.Disgust.Table, digits=2, row.names = F, left=T)
+print(Harm.Risk.Disgust.Table, digits=LOW_PRECISION, row.names = F, left=T)
 
-write.csv (print(Harm.Risk.Disgust.Table, digits=2, row.names = F, left=T), "HarmRiskDisgust2.csv")
+write.csv (print(Harm.Risk.Disgust.Table, digits=LOW_PRECISION, row.names = F, left=T), "HarmRiskDisgust2.csv")
 
 
 
@@ -995,12 +1009,12 @@ sex.differences.disgust1 <- as.data.frame(
   })))
 colnames(sex.differences.disgust1)<- c("raw effect", "p.value","df")
 row.names(sex.differences.disgust1) <- measures.disgust1
-print(sex.differences.disgust1, digits=3 )
+print(sex.differences.disgust1, digits=HIGH_PRECISION)
 
 # calculate d
 library(effsize)
 d.sex.disgustharm1 <-  lapply (measures.disgust1, function (x) 
-{cohen.d (study1[,x] ~ study1$sex.code, na.rm=T,conf.level=0.95)}) 
+{cohen.d (study1[,x] ~ study1$sex.code, na.rm=T,conf.level=HIGH_CONFIDENCE)}) 
 
 d.sex.differences.disgust1 <- as.data.frame(
   t(sapply(d.sex.disgustharm1, function(x) {
@@ -1011,11 +1025,11 @@ d.sex.differences.disgust1 <- as.data.frame(
 
 colnames(d.sex.differences.disgust1)<- c("d", "-95%CI" , "+95%CI")
 row.names(d.sex.differences.disgust1) <- measures.disgust1
-print(d.sex.differences.disgust1, digits=3 )
+print(d.sex.differences.disgust1, digits=HIGH_PRECISION)
 
 #summarize study 1 disgust
 sex.disgustharm1 <- merge(d.sex.differences.disgust1,  sex.differences.disgust1, by="row.names", all=TRUE  )
-print(sex.disgustharm1, digits=3)
+print(sex.disgustharm1, digits=HIGH_PRECISION)
 
 
 # study 2 disgust raw effect and p values based on Welsh's t
@@ -1031,11 +1045,11 @@ t.sex.differences.disgust2 <- as.data.frame(
   })))
 colnames(t.sex.differences.disgust2)<- c("raw effect" ,"p.value","df")
 row.names(t.sex.differences.disgust2) <- measures.disgust2
-print(t.sex.differences.disgust2, digits=3 )
+print(t.sex.differences.disgust2, digits=HIGH_PRECISION)
 
 #  calculate d
 d.sex.disgust2 <-  lapply (measures.disgust2, function (x) 
-{cohen.d (study2[,x], study2$sex.code,  na.rm=T,conf.level=0.95)})
+{cohen.d (study2[,x], study2$sex.code,  na.rm=T,conf.level=HIGH_CONFIDENCE)})
 
 d.sex.differences.disgust2 <- as.data.frame(
   t(sapply(d.sex.disgust2, function(x) {
@@ -1046,17 +1060,17 @@ d.sex.differences.disgust2 <- as.data.frame(
 
 colnames(d.sex.differences.disgust2)<- c("d", "-95%CI" , "+95%CI")
 row.names(d.sex.differences.disgust2) <- measures.disgust2
-print(d.sex.differences.disgust2, digits=3 )
+print(d.sex.differences.disgust2, digits=HIGH_PRECISION)
 
 #summarize study 2 disgust
 sex.disgust2 <- merge(d.sex.differences.disgust2, t.sex.differences.disgust2,  by="row.names", all=TRUE  )
-print(sex.disgust2, digits=3)
+print(sex.disgust2, digits=HIGH_PRECISION)
 
 ########################
 #| | | TABLE  | | | | |#
 ########################
 DisgustSexDifferences <- merge(x=sex.disgustharm1 , y=sex.disgust2,
                                by="Row.names",all=T, suffixes=c(".study1", ".study2"))
-print(DisgustSexDifferences, digits=3 )
+print(DisgustSexDifferences, digits=HIGH_PRECISION)
 write.table(DisgustSexDifferences, file="DisgustSex95.csv", sep=",", row.names=F) 
 
