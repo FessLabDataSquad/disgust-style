@@ -267,8 +267,8 @@ print(sex.differences.disgustharm1, digits=HIGH_PRECISION )
 # calculate d
 library(effsize)
 d.sex.disgustharm1 <-  lapply (measure.disgustharm1, function (x) 
-  HIGH_CONFIDENCE = 0.95
-  {cohen.d (study1[,x] ~ study1$sex.code, na.rm=T,conf.level=HIGH_CONFIDENCE)})
+HIGH_CONFIDENCE = 0.95
+{cohen.d (study1[,x] ~ study1$sex.code, na.rm=T,conf.level=HIGH_CONFIDENCE)})
 
 d.sex.differences.disgustharm1 <- as.data.frame(
   t(sapply(d.sex.disgustharm1, function(x) {
